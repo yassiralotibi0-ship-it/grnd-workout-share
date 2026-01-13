@@ -40,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // Fetch Workout Data
 async function fetchWorkoutPlan(id) {
     try {
-        // Need to use the import endpoint as per Android source code
-        const response = await fetch(`${API_BASE_URL}/workout-plans/import/${id}`);
+        // Use the shared-workout endpoint to get workout by shareId
+        const response = await fetch(`${API_BASE_URL}/shared-workout/${id}`);
 
         if (!response.ok) {
             throw new Error('Failed to fetch workout');
@@ -49,8 +49,14 @@ async function fetchWorkoutPlan(id) {
 
         const data = await response.json();
 
-        if (data && data.data) {
-            renderWorkout(data.data);
+        // Check for error response
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // The response contains the workout directly
+        if (data && data.workouts) {
+            renderWorkout(data);
         } else {
             throw new Error('Invalid data format');
         }
@@ -66,13 +72,10 @@ function renderWorkout(plan) {
     loadingState.classList.add('hidden');
     workoutContent.classList.remove('hidden');
 
-    // Update Header Stats
-    // Plan might be the raw plan or wrapped in a share object
-    const workoutData = plan.plan || plan;
+    // The plan comes directly with workouts array
+    planNameEl.textContent = plan.name || 'برنامج تمرين';
 
-    planNameEl.textContent = workoutData.name || 'برنامج تمرين';
-
-    const workouts = workoutData.workouts || [];
+    const workouts = plan.workouts || [];
     daysCountEl.textContent = workouts.length;
 
     // Calculate total exercises and muscles
